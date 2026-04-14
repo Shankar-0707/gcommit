@@ -1,6 +1,7 @@
 {
   "name": "@shankar07/gcommit",
-  "version": "0.1.1",
+
+  "version": "0.1.2",
   "type": "module",
   "description": "AI-powered git commit message generator using Groq",
   "bin": {
