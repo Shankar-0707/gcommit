@@ -16,8 +16,7 @@ Cancel
 ## Installation
 
 ```bash
-npm install -g gcommit
-```
+npm install -g @shankar07/gcommit```
 
 ## Setup
 
@@ -81,3 +80,10 @@ API key resolution order:
 ## License
 
 MIT
+
+## Security & Privacy
+
+Your staged git diff is sent to Groq's API to generate the commit message.
+Do not use this tool if your code is confidential or if your diff may contain
+secrets (passwords, API keys, tokens). Review Groq's privacy policy at
+https://groq.com/privacy-policy before use.
