@@ -16,8 +16,7 @@ Cancel
 ## Installation
 
 ```bash
-npm install -g gcommit
-```
+npm install -g @shankar07/gcommit```
 
 ## Setup
 
