@@ -1,10 +1,10 @@
 {
-  "name": "gcommit",
+  "name": "@shankar07/gcommit",
   "version": "0.1.0",
   "type": "module",
   "description": "AI-powered git commit message generator using Groq",
   "bin": {
-    "gcommit": "./src/index.js"
+    "gcommit": "src/index.js"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -26,7 +26,7 @@
   "homepage": "https://github.com/Shankar-0707/gcommit",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Shankar-0707/gcommit.git"
+    "url": "git+https://github.com/Shankar-0707/gcommit.git"
   },
   "scripts": {
     "dev": "node src/index.js",
