@@ -15,8 +15,15 @@ Cancel
 
 ## Installation
 
+**New Users:**
 ```bash
 npm install -g @shankar07/gcommit
+```
+
+**Existing Users (Update to latest version):**
+```bash
+npm update -g @shankar07/gcommit
+```
 
 ## Setup
 
@@ -29,8 +36,15 @@ gcommit config --set apiKey=YOUR_GROQ_KEY
 ## Usage
 
 ```bash
+# View all available commands and options
+gcommit --help
+
 # Generate a commit message for staged changes
 gcommit
+
+# 🔥 NEW: AI code review of staged changes before committing
+gcommit review
+gcommit review --help  # see specific options for the review command
 
 # Preview suggestion without committing
 gcommit --dry-run
