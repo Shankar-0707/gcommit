@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0] - 2026-04-15
+
+### Added
+- `gcommit review` feature for AI code reviews of staged changes before committing
+- Dedicated `gcommit review --help` command for code review options
+- Interactive transition prompt from review directly into the commit generator
+
 ## [0.1.0] - 2026-04-14
 
 ### Added
