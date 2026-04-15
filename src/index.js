@@ -196,7 +196,6 @@ program
     }
   });
 
-program.parse();
 
 
 // ─── Review subcommand ────────────────────────────────────────────────────────
@@ -304,3 +303,5 @@ program
       process.exit(1);
     }
   });
+
+  program.parse();
