@@ -96,3 +96,54 @@ export async function promptUserAction(suggestion) {
 
   return { action, message: suggestion };
 }
+
+/**
+ * Display the code review results in the terminal.
+ *
+ * @param {object} review - parsed review object
+ * @param {Array} review.issues - list of issues
+ * @param {Array} review.positives - list of positives
+ * @param {string} review.summary - overall summary
+ * @returns {void}
+ */
+export function showReview(review) {
+  console.log('');
+  console.log(chalk.bold('── Code Review ─────────────────────────'));
+  console.log('');
+
+  if (review.issues.length === 0) {
+    console.log(chalk.green('  ✔ No issues found. Code looks clean!'));
+  } else {
+    const warnings = review.issues.filter(i => i.severity === 'WARNING');
+    const suggestions = review.issues.filter(i => i.severity === 'SUGGESTION');
+
+    console.log(
+      chalk.yellow(`  Issues found`) +
+      chalk.gray(` (${warnings.length} warning${warnings.length !== 1 ? 's' : ''}, ${suggestions.length} suggestion${suggestions.length !== 1 ? 's' : ''})`)
+    );
+    console.log('');
+
+    for (const issue of review.issues) {
+      const icon = issue.severity === 'WARNING' ? chalk.yellow('  ⚠') : chalk.blue('  💡');
+      console.log(`${icon} ${chalk.bold(issue.location)}`);
+      console.log(`    ${issue.description}`);
+      console.log(`    ${chalk.gray('Fix: ' + issue.fix)}`);
+      console.log('');
+    }
+  }
+
+  if (review.positives.length > 0) {
+    for (const positive of review.positives) {
+      console.log(chalk.green('  ✔ ' + positive));
+    }
+    console.log('');
+  }
+
+  console.log(chalk.bold('─────────────────────────────────────────'));
+  console.log('');
+
+  if (review.summary) {
+    console.log('  ' + chalk.italic(review.summary));
+    console.log('');
+  }
+}
