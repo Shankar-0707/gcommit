@@ -9,7 +9,7 @@ const DEFAULTS = {
     apiKey: '',
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     language: 'en',
-    maxDiffLines: 500,
+    maxDiffLines: 2000,
     autoStage: false,
 };
 
