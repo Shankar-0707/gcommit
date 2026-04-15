@@ -4,6 +4,8 @@ import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { reviewStagedChanges } from './review.js';
+import inquirer from 'inquirer';
 
 import { getStagedDiff, getStagedFiles, runCommit } from './git.js';
 import { generateCommitMessage } from './ai.js';
@@ -15,6 +17,7 @@ import {
   showWarning,
   createSpinner,
   promptUserAction,
+  showReview
 } from './interactive.js';
 import {
   NoStagedChangesError,
@@ -194,3 +197,110 @@ program
   });
 
 program.parse();
+
+
+// ─── Review subcommand ────────────────────────────────────────────────────────
+program
+  .command('review')
+  .description('AI code review of staged changes before committing')
+  .option('--commit', 'proceed to commit after review')
+  .action(async (options) => {
+    try {
+      // 1. Resolve API key
+      const apiKey = resolveApiKey();
+      if (!apiKey) {
+        showError("API key missing. Run 'gcommit config --set apiKey=YOUR_KEY'");
+        process.exit(1);
+      }
+
+      // 2. Get staged diff
+      const spinner = createSpinner('Reading staged changes...');
+      spinner.start();
+
+      let diff, files;
+      try {
+        diff = await getStagedDiff();
+        files = await getStagedFiles();
+        spinner.succeed('Staged changes found.');
+      } catch (err) {
+        spinner.fail('Failed to read git diff.');
+        showError(err.message);
+        process.exit(1);
+      }
+
+      // 3. Run AI review
+      const reviewSpinner = createSpinner('Reviewing your code...');
+      reviewSpinner.start();
+
+      let review;
+      try {
+        const model = getConfig('model');
+        review = await reviewStagedChanges(diff, files, { apiKey, model });
+        reviewSpinner.succeed('Review complete.');
+      } catch (err) {
+        reviewSpinner.fail('Review failed.');
+        showError(err.message);
+        process.exit(1);
+      }
+
+      // 4. Show review
+      showReview(review);
+
+      // 5. Ask if they want to proceed to commit
+      const { proceed } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'proceed',
+          message: 'Proceed to generate commit message?',
+          default: review.issues.length === 0,
+        },
+      ]);
+
+      if (!proceed) {
+        showWarning('Commit cancelled. Fix the issues and try again.');
+        process.exit(0);
+      }
+
+      // 6. Generate commit message
+      const aiSpinner = createSpinner('Generating commit message...');
+      aiSpinner.start();
+
+      const model = getConfig('model');
+      const language = getConfig('language');
+      let suggestion;
+
+      try {
+        suggestion = await generateCommitMessage(diff, files, { apiKey, model, language });
+        aiSpinner.succeed('Suggestion ready.');
+      } catch (err) {
+        aiSpinner.fail('AI generation failed.');
+        showError(err.message);
+        process.exit(1);
+      }
+
+      showSuggestion(suggestion);
+
+      // 7. Interactive commit flow
+      while (true) {
+        const { action, message } = await promptUserAction(suggestion);
+
+        if (action === 'accept') {
+          await runCommit(message);
+          showSuccess(`Committed: ${message}`);
+          break;
+        } else if (action === 'regenerate') {
+          showWarning('Regenerating...');
+          suggestion = await generateCommitMessage(diff, files, { apiKey, model, language });
+          showSuggestion(suggestion);
+          continue;
+        } else if (action === 'cancel') {
+          showWarning('Cancelled. No commit was made.');
+          break;
+        }
+      }
+
+    } catch (err) {
+      showError(`Unexpected error: ${err.message}`);
+      process.exit(1);
+    }
+  });
