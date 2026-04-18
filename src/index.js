@@ -6,10 +6,13 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { reviewStagedChanges } from './review.js';
 import inquirer from 'inquirer';
-
+import chalk from 'chalk';
 import { getStagedDiff, getStagedFiles, runCommit } from './git.js';
 import { generateCommitMessage } from './ai.js';
 import { getConfig, setConfig, getAllConfig, resolveApiKey } from './config.js';
+import { scanUnusedCode, getAISummary, generateReport } from './unused.js';
+import { showUnusedResults } from './interactive.js';
+import { writeFileSync } from 'fs';
 import {
   showSuggestion,
   showError,
@@ -295,6 +298,94 @@ program
         } else if (action === 'cancel') {
           showWarning('Cancelled. No commit was made.');
           break;
+        }
+      }
+
+    } catch (err) {
+      showError(`Unexpected error: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+
+  // ─── Unused subcommand ────────────────────────────────────────────────────────
+program
+  .command('unused')
+  .description('scan codebase for unused functions, variables and empty files')
+  .option('--no-ai', 'skip AI summary, just show raw results')
+  .option('--export', 'export results to unused-report.txt')
+  .action(async (options) => {
+    try {
+      // 1. Scan the codebase
+      const spinner = createSpinner('Scanning codebase for unused code...');
+      spinner.start();
+
+      let results;
+      try {
+        results = await scanUnusedCode();
+        spinner.succeed(`Scanned ${results.totalFiles} files.`);
+      } catch (err) {
+        spinner.fail('Scan failed.');
+        showError(err.message);
+        process.exit(1);
+      }
+
+      // 2. Show results
+      showUnusedResults(results);
+
+      const total =
+        results.unusedFunctions.length +
+        results.unusedVariables.length +
+        results.emptyFiles.length;
+
+      // 3. Get AI summary if results found and ai not disabled
+      let aiSummary = '';
+      if (total > 0 && options.ai !== false) {
+        const apiKey = resolveApiKey();
+        if (apiKey) {
+          const aiSpinner = createSpinner('Getting AI recommendations...');
+          aiSpinner.start();
+          try {
+            const model = getConfig('model');
+            aiSummary = await getAISummary(results, { apiKey, model });
+            aiSpinner.succeed('AI recommendations ready.');
+            console.log('');
+            console.log('  ' + chalk.italic(aiSummary));
+            console.log('');
+          } catch {
+            aiSpinner.warn('Could not get AI summary. Showing raw results only.');
+          }
+        }
+      }
+
+      // 4. Export report if requested
+      if (options.export && total > 0) {
+        const report = generateReport(results, aiSummary);
+        const filename = 'unused-report.txt';
+        writeFileSync(filename, report, 'utf8');
+        showSuccess(`Report exported to ${filename}`);
+      }
+
+      // 5. If items found, ask what to do
+      if (total > 0) {
+        const { action } = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'action',
+            message: 'What would you like to do?',
+            choices: [
+              { name: 'Export report to unused-report.txt', value: 'export' },
+              { name: 'Exit', value: 'exit' },
+            ],
+          },
+        ]);
+
+        if (action === 'export') {
+          const report = generateReport(results, aiSummary);
+          writeFileSync('unused-report.txt', report, 'utf8');
+          showSuccess('Report exported to unused-report.txt');
+        } else {
+          showWarning('No changes made. Review the findings manually.');
         }
       }
 
