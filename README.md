@@ -33,6 +33,13 @@ Get a free API key from [console.groq.com](https://console.groq.com) and save it
 gcommit config --set apiKey=YOUR_GROQ_KEY
 ```
 
+**API Limit Reached?**
+If you reach your Groq API rate limit or need to replace your key, you can create a new one from your Groq console and update it in `gcommit` anytime using:
+
+```bash
+gcommit config --set apiKey=YOUR_NEW_GROQ_KEY
+```
+
 ## Usage
 
 ```bash
@@ -45,6 +52,11 @@ gcommit
 # 🔥 NEW: AI code review of staged changes before committing
 gcommit review
 gcommit review --help  # see specific options for the review command
+
+# 🔥 NEW: Scan codebase for unused code (functions, variables, empty files)
+gcommit unused
+gcommit unused --export     # Export the scan results to unused-report.txt
+gcommit unused --no-ai      # Skip AI summary, just show raw scan results
 
 # Preview suggestion without committing
 gcommit --dry-run

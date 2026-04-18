@@ -147,3 +147,100 @@ export function showReview(review) {
     console.log('');
   }
 }
+
+/**
+ * Display unused code scan results in the terminal.
+ *
+ * @param {object} results - scan results
+ * @returns {void}
+ */
+export function showUnusedResults(results) {
+  console.log('');
+  console.log(chalk.bold('── Unused Code Analysis ─────────────────'));
+  console.log('');
+
+  const total =
+    results.unusedFunctions.length +
+    results.unusedVariables.length +
+    results.emptyFiles.length;
+
+  if (total === 0) {
+    console.log(chalk.green('  ✔ No unused code found. Codebase looks clean!'));
+    console.log('');
+    console.log(chalk.bold('─────────────────────────────────────────'));
+    return;
+  }
+
+  // Group functions by file
+  if (results.unusedFunctions.length > 0) {
+    console.log(chalk.yellow(`  ⚠ Unused Functions (${results.unusedFunctions.length} found)`));
+    console.log('');
+
+    const byFile = {};
+    for (const fn of results.unusedFunctions) {
+      if (!byFile[fn.file]) byFile[fn.file] = [];
+      byFile[fn.file].push(fn);
+    }
+
+    for (const [file, fns] of Object.entries(byFile)) {
+      console.log(`  📁 ${chalk.cyan(file)}`);
+      for (const fn of fns) {
+        console.log(`    line ${String(fn.line).padEnd(4)} — ${chalk.bold(fn.name + '()')}`);
+      }
+      console.log('');
+    }
+  } else {
+    console.log(chalk.green('  ✔ No unused functions found'));
+    console.log('');
+  }
+
+  // Group variables by file
+  if (results.unusedVariables.length > 0) {
+    console.log(chalk.yellow(`  ⚠ Unused Variables (${results.unusedVariables.length} found)`));
+    console.log('');
+
+    const byFile = {};
+    for (const v of results.unusedVariables) {
+      if (!byFile[v.file]) byFile[v.file] = [];
+      byFile[v.file].push(v);
+    }
+
+    for (const [file, vars] of Object.entries(byFile)) {
+      console.log(`  📁 ${chalk.cyan(file)}`);
+      for (const v of vars) {
+        console.log(`    line ${String(v.line).padEnd(4)} — ${chalk.bold(v.name)}`);
+      }
+      console.log('');
+    }
+  } else {
+    console.log(chalk.green('  ✔ No unused variables found'));
+    console.log('');
+  }
+
+  // Empty files
+  if (results.emptyFiles.length > 0) {
+    console.log(chalk.yellow(`  ⚠ Empty Files (${results.emptyFiles.length} found)`));
+    console.log('');
+    for (const f of results.emptyFiles) {
+      console.log(`    📄 ${chalk.cyan(f)}`);
+    }
+    console.log('');
+  } else {
+    console.log(chalk.green('  ✔ No empty files found'));
+    console.log('');
+  }
+
+  console.log(chalk.bold('─────────────────────────────────────────'));
+  console.log('');
+
+  const fileCount = new Set([
+    ...results.unusedFunctions.map(f => f.file),
+    ...results.unusedVariables.map(v => v.file),
+    ...results.emptyFiles,
+  ]).size;
+
+  console.log(
+    chalk.yellow(`  Found ${total} unused code item${total !== 1 ? 's' : ''} across ${fileCount} file${fileCount !== 1 ? 's' : ''}`)
+  );
+  console.log('');
+}

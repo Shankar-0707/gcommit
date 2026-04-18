@@ -47,9 +47,30 @@ export async function generateCommitMessage(diff, files, options) {
     }
 
     return text;
-  } catch (err) {
+  }  catch (err) {
     if (err instanceof APIKeyMissingError || err instanceof APIResponseError) {
       throw err;
+    }
+
+    // Groq rate limit hit
+    if (err.message?.includes('rate_limit') || err.message?.includes('429')) {
+      throw new APIResponseError(
+        `Groq API rate limit reached.\n\n` +
+        `  Options:\n` +
+        `  1. Wait a minute and try again\n` +
+        `  2. Get a new free key at console.groq.com\n` +
+        `  3. Update your key: gcommit config --set apiKey=NEW_KEY\n` +
+        `  4. Switch model: gcommit config --set model=llama3-8b-8192`
+      );
+    }
+
+    // Invalid or expired API key
+    if (err.message?.includes('401') || err.message?.includes('invalid_api_key')) {
+      throw new APIResponseError(
+        `Invalid or expired API key.\n\n` +
+        `  Fix: gcommit config --set apiKey=YOUR_NEW_KEY\n` +
+        `  Get a free key at: console.groq.com`
+      );
     }
 
     throw new APIResponseError(`API request failed: ${err.message}`);
